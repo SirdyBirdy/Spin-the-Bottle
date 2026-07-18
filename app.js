@@ -1,4 +1,4 @@
-/* Botal Ghumao — Spin the Bottle (Desi Edition)
+/* Spin — Spin the Bottle
    App logic. Expects PROMPTS and TAG_META to already be defined (see content.js). */
 
 (function(){
@@ -7,8 +7,7 @@
   // ---------------- State ----------------
   let state = {
     count: 4,
-    names: ["", "", "", ""],
-    categories: new Set(["icebreaker", "dare", "bollywood"]),
+    categories: new Set(["icebreaker", "dare", "wildcard"]),
     round: 0,
     rotationAcc: 0,
     lastPickedIndex: -1,
@@ -16,29 +15,18 @@
   };
 
   // ---------------- Setup screen elements ----------------
-  const namesList = document.getElementById('names-list');
   const playerCountEl = document.getElementById('player-count');
   const categoryChips = document.getElementById('category-chips');
 
-  function renderNameInputs(){
-    namesList.innerHTML = "";
-    for(let i=0;i<state.count;i++){
-      const input = document.createElement('input');
-      input.className = 'name-input';
-      input.placeholder = `Player ${i+1}`;
-      input.maxLength = 14;
-      input.value = state.names[i] || "";
-      input.addEventListener('input', (e)=>{ state.names[i] = e.target.value; });
-      namesList.appendChild(input);
-    }
+  function updatePlayerCountLabel(){
     playerCountEl.childNodes[0].nodeValue = state.count;
   }
 
   document.getElementById('minus-btn').addEventListener('click', ()=>{
-    if(state.count > 3){ state.count--; state.names.length = state.count; renderNameInputs(); }
+    if(state.count > 3){ state.count--; updatePlayerCountLabel(); }
   });
   document.getElementById('plus-btn').addEventListener('click', ()=>{
-    if(state.count < 8){ state.count++; state.names.push(""); renderNameInputs(); }
+    if(state.count < 8){ state.count++; updatePlayerCountLabel(); }
   });
 
   function renderCategoryChips(){
@@ -59,7 +47,7 @@
     });
   }
 
-  renderNameInputs();
+  updatePlayerCountLabel();
   renderCategoryChips();
 
   // ---------------- Screen switching ----------------
@@ -71,14 +59,10 @@
     el.classList.add('active');
   }
 
-  let players = [];
+  let playerCount = 0;
 
   document.getElementById('start-btn').addEventListener('click', ()=>{
-    players = [];
-    for(let i=0;i<state.count;i++){
-      const n = (state.names[i] || "").trim();
-      players.push(n || `Player ${i+1}`);
-    }
+    playerCount = state.count;
     state.round = 1;
     state.rotationAcc = 0;
     state.lastPickedIndex = -1;
@@ -91,7 +75,7 @@
 
   document.getElementById('back-btn').addEventListener('click', ()=> showScreen(screenSetup));
   document.getElementById('restart-btn').addEventListener('click', ()=>{
-    if(confirm('Naya khel shuru karein? Round reset ho jayega.')){
+    if(confirm('Start a new game? This will reset the round.')){
       state.round = 1;
       state.rotationAcc = 0;
       state.lastPickedIndex = -1;
@@ -108,29 +92,17 @@
   function renderTable(){
     // remove old chips
     tableCircle.querySelectorAll('.player-chip').forEach(el=>el.remove());
-    const n = players.length;
+    const n = playerCount;
     const radiusPct = 38; // percent of container radius
-    players.forEach((name, i)=>{
+    for(let i=0;i<n;i++){
       const angleDeg = i * (360 / n); // 0 = top, clockwise
       const chip = document.createElement('div');
       chip.className = 'player-chip';
       chip.dataset.index = i;
       chip.style.transform = `translate(-50%,-50%) rotate(${angleDeg}deg) translateY(-${radiusPct}%) rotate(${-angleDeg}deg)`;
-      chip.innerHTML = `<div class="player-avatar">${initials(name)}</div><div class="player-name">${escapeHtml(name)}</div>`;
+      chip.innerHTML = `<div class="player-dot"></div>`;
       tableCircle.appendChild(chip);
-    });
-  }
-
-  function initials(name){
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if(parts.length === 0) return "?";
-    if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  function escapeHtml(str){
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
+    }
   }
 
   // ---------------- Spin logic ----------------
@@ -139,7 +111,7 @@
   const spinHint = document.getElementById('spin-hint');
 
   function pickPlayerIndex(){
-    const n = players.length;
+    const n = playerCount;
     if(n <= 1) return 0;
     let idx;
     do { idx = Math.floor(Math.random() * n); } while(idx === state.lastPickedIndex && n > 2);
@@ -151,7 +123,7 @@
     state.spinning = true;
     spinHint.style.opacity = '0';
 
-    const n = players.length;
+    const n = playerCount;
     const targetIndex = pickPlayerIndex();
     state.lastPickedIndex = targetIndex;
     const sliceAngle = 360 / n;
@@ -160,18 +132,55 @@
     const fullSpins = 5 + Math.floor(Math.random() * 3); // 5-7 full spins
     const currentMod = ((state.rotationAcc % 360) + 360) % 360;
     let delta = (targetAngle - currentMod + 360) % 360;
-    const newRotation = state.rotationAcc + fullSpins * 360 + delta;
-    state.rotationAcc = newRotation;
+    const startRotation = state.rotationAcc;
+    const endRotation = startRotation + fullSpins * 360 + delta;
+    state.rotationAcc = endRotation;
 
-    bottleWrap.style.transition = 'transform 3.4s cubic-bezier(0.15, 0.85, 0.2, 1)';
-    bottleWrap.style.transform = `rotate(${newRotation}deg)`;
+    // Two phases: a long, strongly-decelerating spin, then a short elastic
+    // "wobble" over the last few degrees so it doesn't just stop dead —
+    // closer to how a real bottle loses momentum and rocks to a stop.
+    const settleGap = 9; // degrees reserved for the wobble
+    const spinTarget = endRotation - settleGap;
+    const spinDuration = 2900;
+    const settleDuration = 520;
 
-    setTimeout(()=>{
-      state.spinning = false;
-      highlightPlayer(targetIndex);
-      burstConfetti();
-      showPrompt(targetIndex);
-    }, 3500);
+    const easeOutQuint = t => 1 - Math.pow(1 - t, 5);
+    const easeOutBack = t => {
+      const c1 = 1.70158, c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    };
+
+    let phaseStart = null;
+
+    function runSpinPhase(now){
+      if(phaseStart === null) phaseStart = now;
+      const t = Math.min((now - phaseStart) / spinDuration, 1);
+      const angle = startRotation + (spinTarget - startRotation) * easeOutQuint(t);
+      bottleWrap.style.transform = `rotate(${angle}deg)`;
+      if(t < 1){
+        requestAnimationFrame(runSpinPhase);
+      } else {
+        phaseStart = null;
+        requestAnimationFrame(runSettlePhase);
+      }
+    }
+
+    function runSettlePhase(now){
+      if(phaseStart === null) phaseStart = now;
+      const t = Math.min((now - phaseStart) / settleDuration, 1);
+      const angle = spinTarget + (endRotation - spinTarget) * easeOutBack(t);
+      bottleWrap.style.transform = `rotate(${angle}deg)`;
+      if(t < 1){
+        requestAnimationFrame(runSettlePhase);
+      } else {
+        bottleWrap.style.transform = `rotate(${endRotation}deg)`;
+        state.spinning = false;
+        highlightPlayer(targetIndex);
+        showPrompt(targetIndex);
+      }
+    }
+
+    requestAnimationFrame(runSpinPhase);
   }
 
   bottleStage.addEventListener('click', spin);
@@ -185,27 +194,9 @@
     });
   }
 
-  // ---------------- Confetti (gulal burst) ----------------
-  const gulalColors = ['#FF8A3D','#FF4D8D','#3E8E62','#D4A93B','#8B5CF6'];
-  function burstConfetti(){
-    const rect = bottleStage.getBoundingClientRect();
-    const cx = rect.left + rect.width/2;
-    for(let i=0;i<28;i++){
-      const piece = document.createElement('div');
-      piece.className = 'confetti-piece';
-      piece.style.left = (cx + (Math.random()*160 - 80)) + 'px';
-      piece.style.background = gulalColors[Math.floor(Math.random()*gulalColors.length)];
-      piece.style.animationDuration = (1.8 + Math.random()*1.2) + 's';
-      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-      document.body.appendChild(piece);
-      setTimeout(()=>piece.remove(), 3200);
-    }
-  }
-
   // ---------------- Prompt modal ----------------
   const modalOverlay = document.getElementById('modal-overlay');
   const modalTag = document.getElementById('modal-tag');
-  const modalName = document.getElementById('modal-name');
   const modalPrompt = document.getElementById('modal-prompt');
 
   let currentCategory = null;
@@ -226,7 +217,6 @@
   }
 
   function showPrompt(idx){
-    modalName.textContent = players[idx];
     fillPrompt();
     modalOverlay.classList.add('show');
   }
