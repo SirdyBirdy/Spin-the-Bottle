@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<title>Botal Ghumao 🍾 — Spin the Bottle</title>
+<meta name="theme-color" content="#FAF6EF">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <section id="screen-setup" class="screen active">
+    <div class="brand">
+      <h1 class="brand-title">Botal Ghumao 🍾</h1>
+      <p class="brand-sub">Spin the bottle, desi style — table pe phone rakho, khel shuru karo</p>
+    </div>
+
+    <div class="card setup-card">
+      <span class="field-label">Kitne players?</span>
+      <div class="stepper">
+        <button class="stepper-btn" id="minus-btn" aria-label="Kam karo">−</button>
+        <div class="stepper-count" id="player-count">4<span>players</span></div>
+        <button class="stepper-btn" id="plus-btn" aria-label="Zyada karo">+</button>
+      </div>
+
+      <span class="field-label">Naam daalo</span>
+      <div class="names-list" id="names-list"></div>
+
+      <span class="field-label">Kya khelna hai?</span>
+      <div class="chip-row" id="category-chips"></div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <button class="btn btn-primary" id="start-btn">Shuru Karo →</button>
+    </div>
+    <p class="setup-footnote">Phone ko table ke beech mein flat rakho, sab log around baith jao. 🪔</p>
+
+    <footer class="credit">Made for chai-time icebreakers ☕️</footer>
+  </section>
+
+  <!-- ============ TABLE / GAME SCREEN ============ -->
+  <section id="screen-table" class="screen">
+    <div class="table-header">
+      <button class="icon-btn" id="back-btn" aria-label="Setup mein wapas jao">←</button>
+      <span class="round-label" id="round-label">Round 1</span>
+      <button class="icon-btn" id="restart-btn" aria-label="Naya khel">↻</button>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-circle" id="table-circle">
+        <div class="bottle-stage" id="bottle-stage" role="button" tabindex="0" aria-label="Botal ghumao">
+          <div class="bottle-wrap" id="bottle-wrap">
+            <svg viewBox="0 0 100 260" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FFB067"/>
+                  <stop offset="45%" stop-color="#FF8A3D"/>
+                  <stop offset="100%" stop-color="#E8501D"/>
+                </linearGradient>
+                <linearGradient id="capGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#FF6FA0"/>
+                  <stop offset="100%" stop-color="#E01F6B"/>
+                </linearGradient>
+              </defs>
+              <!-- neck -->
+              <rect x="42" y="6" width="16" height="34" rx="6" fill="url(#capGrad)"/>
+              <rect x="40" y="34" width="20" height="18" rx="4" fill="url(#glassGrad)"/>
+              <!-- body -->
+              <path d="M40 50 C40 50 30 66 30 90 L30 210 C30 232 40 250 50 250 C60 250 70 232 70 210 L70 90 C70 66 60 50 60 50 Z" fill="url(#glassGrad)"/>
+              <!-- label -->
+              <rect x="30" y="140" width="40" height="52" rx="6" fill="#FFF7EC" opacity="0.94"/>
+              <text x="50" y="162" text-anchor="middle" font-family="Baloo 2, sans-serif" font-size="13" font-weight="700" fill="#E01F6B">MASALA</text>
+              <text x="50" y="178" text-anchor="middle" font-family="Baloo 2, sans-serif" font-size="9" font-weight="700" fill="#F0631A">SPECIAL</text>
+              <!-- highlight -->
+              <path d="M35 70 C33 100 33 180 36 220" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity="0.35" fill="none"/>
+            </svg>
+          </div>
+          <div class="spin-hint" id="spin-hint">Tap karo ghumane ke liye</div>
+        </div>
+        <!-- player chips injected via JS -->
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ PROMPT MODAL ============ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-card">
+    <span class="modal-tag" id="modal-tag">Icebreaker</span>
+    <p class="modal-target">Baari hai <b id="modal-name">Player</b> ki!</p>
+    <p class="modal-prompt" id="modal-prompt">Loading...</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="shuffle-btn">🔀 Doosra</button>
+      <button class="btn btn-primary" id="next-round-btn">Agla Round →</button>
+    </div>
+  </div>
+</div>
+
+<script src="content.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
